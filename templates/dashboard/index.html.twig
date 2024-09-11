@@ -1,0 +1,35 @@
+{% extends 'base.html.twig' %}
+
+{% block body %}
+    <div class="container">
+        <h1 class="my-4">Database Dashboard</h1>
+        <table class="table table-striped">
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Name</th>
+                    <th>Host</th>
+                    <th>Port</th>
+                    <th>Username</th>
+                    <th>Database Name</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for database in databases %}
+                    <tr>
+                        <td>{{ database.id }}</td>
+                        <td>{{ database.name }}</td>
+                        <td>{{ database.host }}</td>
+                        <td>{{ database.port }}</td>
+                        <td>{{ database.username }}</td>
+                        <td>{{ database.databaseName }}</td>
+                    </tr>
+                {% else %}
+                    <tr>
+                        <td colspan="6">No databases found</td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+{% endblock %}
