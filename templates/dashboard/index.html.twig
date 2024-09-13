@@ -1,87 +1,94 @@
 {% extends 'base.html.twig' %}
 
 {% block body %}
-    <div class="container">
-        <h1 class="my-4">Database Dashboard</h1>
+    <div class="container my-4">
+        <h1 class="text-light mb-4">Database Dashboard</h1>
 
-        <button type="button" class="btn btn-primary" data-toggle="modal" data-target="#addDatabaseModal">
+        <button type="button" class="btn btn-light mb-3" data-toggle="modal" data-target="#addDatabaseModal">
             Add Database
         </button>
 
-
-        <table class="table table-striped">
-            <thead>
-                <tr>
-                    <th>ID</th>
-                    <th>Name</th>
-                    <th>Host</th>
-                    <th>Port</th>
-                    <th>Username</th>
-                    <th>Database Name</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for database in databases %}
+        <div class="table-responsive">
+            <table class="table table-dark table-striped">
+                <thead>
                     <tr>
-                        <td>{{ database.id }}</td>
-                        <td>{{ database.name }}</td>
-                        <td>{{ database.host }}</td>
-                        <td>{{ database.port }}</td>
-                        <td>{{ database.username }}</td>
-                        <td>{{ database.dbname }}</td>
+                        <th>ID</th>
+                        <th>Name</th>
+                        <th>Host</th>
+                        <th>Port</th>
+                        <th>Username</th>
+                        <th>Database Name</th>
                     </tr>
-                {% else %}
-                    <tr>
-                        <td colspan="6">No databases found</td>
-                    </tr>
-                {% endfor %}
-            </tbody>
-        </table>
+                </thead>
+                <tbody>
+                    {% for database in databases %}
+                        <tr>
+                            <td>{{ database.id }}</td>
+                            <td>{{ database.name }}</td>
+                            <td>{{ database.host }}</td>
+                            <td>{{ database.port }}</td>
+                            <td>{{ database.username }}</td>
+                            <td>{{ database.dbname }}</td>
+                        </tr>
+                    {% else %}
+                        <tr>
+                            <td colspan="6" class="text-center">No databases found</td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
     </div>
 
+    <!-- Modal -->
     <div class="modal fade" id="addDatabaseModal" tabindex="-1" aria-labelledby="addDatabaseModalLabel" aria-hidden="true">
-    <div class="modal-dialog">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title" id="addDatabaseModalLabel">Add New Database</h5>
-                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-                    <span aria-hidden="true">&times;</span>
-                </button>
-            </div>
-            <div class="modal-body">
-                <form id="addDatabaseForm" method="post" action="{{ path('add_database') }}">
-                    <div class="form-group">
-                        <label for="name">Name</label>
-                        <input type="text" class="form-control" id="name" name="name" required>
-                    </div>
-                    <div class="form-group">
-                        <label for="host">Host</label>
-                        <input type="text" class="form-control" id="host" name="host" required>
-                    </div>
-                    <div class="form-group">
-                        <label for="port">Port</label>
-                        <input type="text" class="form-control" id="port" name="port" required>
-                    </div>
-                    <div class="form-group">
-                        <label for="username">Username</label>
-                        <input type="text" class="form-control" id="username" name="username" required>
-                    </div>
-                    <div class="form-group">
-                        <label for="password">Password</label>
-                        <input type="password" class="form-control" id="password" name="password" required>
-                    </div>
-                    <div class="form-group">
-                        <label for="dbname">Database Name</label>
-                        <input type="text" class="form-control" id="dbname" name="dbname" required>
-                    </div>
-                    <div class="modal-footer">
-                        <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
-                        <button type="submit" class="btn btn-primary">Create Database</button>
-                    </div>
-                </form>
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content bg-dark text-light">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="addDatabaseModalLabel">Add New Database</h5>
+                    <button type="button" class="btn-close" data-dismiss="modal" aria-label="Close"></button>
+                    
+                </div>
+                <div class="modal-body">
+                    <form id="addDatabaseForm" method="post" action="{{ path('add_database') }}">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="form-group mb-3">
+                                    <label for="name">Name</label>
+                                    <input type="text" class="form-control" id="name" name="name" required>
+                                </div>
+                                <div class="form-group mb-3">
+                                    <label for="host">Host</label>
+                                    <input type="text" class="form-control" id="host" name="host" required>
+                                </div>
+                                <div class="form-group mb-3">
+                                    <label for="port">Port</label>
+                                    <input type="text" class="form-control" id="port" name="port" required>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-group mb-3">
+                                    <label for="username">Username</label>
+                                    <input type="text" class="form-control" id="username" name="username" required>
+                                </div>
+                                <div class="form-group mb-3">
+                                    <label for="password">Password</label>
+                                    <input type="password" class="form-control" id="password" name="password" required>
+                                </div>
+                                <div class="form-group mb-3">
+                                    <label for="dbname">Database Name</label>
+                                    <input type="text" class="form-control" id="dbname" name="dbname" required>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+                            <button type="submit" class="btn btn-primary">Create Database</button>
+                        </div>
+                    </form>
+                </div>
             </div>
         </div>
     </div>
-</div>
 
 {% endblock %}
