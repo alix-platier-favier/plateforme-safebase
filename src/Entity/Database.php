@@ -34,6 +34,9 @@ class Database
     #[ORM\Column(length: 255)]
     private ?string $dbname = null;
 
+    #[ORM\ManyToOne(inversedBy: 'userDB')]
+    private ?User $user = null;
+
     public function getId(): ?int
     {
         return $this->id;
@@ -107,6 +110,18 @@ class Database
     public function setDbname(string $dbname): static
     {
         $this->dbname = $dbname;
+
+        return $this;
+    }
+
+    public function getUser(): ?User
+    {
+        return $this->user;
+    }
+
+    public function setUser(?User $user): static
+    {
+        $this->user = $user;
 
         return $this;
     }
