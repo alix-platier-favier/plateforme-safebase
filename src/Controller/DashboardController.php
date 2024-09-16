@@ -39,4 +39,58 @@ class DashboardController extends AbstractController
 
         return $this->redirectToRoute('dashboard');
     }
+
+    #[Route('/delete-database/{id}', name: 'delete_database', methods: ['POST'])]
+    public function deleteDatabase(int $id, DatabaseRepository $databaseRepository, EntityManagerInterface $entityManager): Response
+    {
+        $database = $databaseRepository->find($id);
+
+        if ($database) {
+            $entityManager->remove($database);
+            $entityManager->flush();
+        }
+
+        $this->addFlash('danger', 'Database deleted successfully!');
+
+        return $this->redirectToRoute('dashboard');
+    }
+    
+    #[Route('/save-database/{id}', name: 'save_database', methods: ['POST'])]
+    public function saveDatabase(int $id, EntityManagerInterface $entityManager): Response
+    {
+        $database = $entityManager->getRepository(Database::class)->find($id);
+
+        if ($database) {
+            $dbname = $database->getDbname();
+            $backupFile = "/path/to/backups/{$dbname}_" . date('Ymd_His') . ".sql";
+
+            // Use mysqldump to save the database
+            $command = "mysqldump -u {$database->getUsername()} -p{$database->getPassword()} {$dbname} > {$backupFile}";
+            system($command);
+        }
+
+        $this->addFlash('success', 'Database saved successfully!');
+
+        return $this->redirectToRoute('dashboard');
+    }
+
+    #[Route('/restore-database/{id}', name: 'restore_database', methods: ['POST'])]
+    public function restoreDatabase(int $id, Request $request, EntityManagerInterface $entityManager): Response
+    {
+        $database = $entityManager->getRepository(Database::class)->find($id);
+
+        if ($database) {
+            $dbname = $database->getDbname();
+            $backupFile = $request->request->get('backup_file'); 
+
+            $command = "mysql -u {$database->getUsername()} -p{$database->getPassword()} {$dbname} < {$backupFile}";
+            system($command);
+        }
+
+        $this->addFlash('success', 'Database restored successfully!');
+
+        return $this->redirectToRoute('dashboard');
+    }
+
+
 }

@@ -4,6 +4,18 @@
     <div class="container my-4">
         <h1 class="text-light mb-4">Database Dashboard</h1>
 
+        {% for label, messages in app.flashes %}
+            <div class="alert alert-{{ label }} alert-dismissible fade show" role="alert">
+                {% for message in messages %}
+                    {{ message }}
+                {% endfor %}
+
+                <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+        {% endfor %}
+
         <button type="button" class="btn btn-light mb-3" data-toggle="modal" data-target="#addDatabaseModal">
             Add Database
         </button>
@@ -12,23 +24,34 @@
             <table class="table table-dark table-striped">
                 <thead>
                     <tr>
-                        <th>ID</th>
                         <th>Name</th>
                         <th>Host</th>
                         <th>Port</th>
                         <th>Username</th>
                         <th>Database Name</th>
+                        <th>Actions</th>
                     </tr>
                 </thead>
                 <tbody>
                     {% for database in databases %}
                         <tr>
-                            <td>{{ database.id }}</td>
                             <td>{{ database.name }}</td>
                             <td>{{ database.host }}</td>
                             <td>{{ database.port }}</td>
                             <td>{{ database.username }}</td>
                             <td>{{ database.dbname }}</td>
+
+                            <td>
+                                <form action="{{ path('save_database', { 'id': database.id }) }}" method="post" class="d-inline">
+                                    <button type="submit" class="btn btn-success">Save</button>
+                                </form>
+                                <form action="{{ path('restore_database', { 'id': database.id }) }}" method="post" class="d-inline">
+                                    <button type="submit" class="btn btn-primary">Restore</button>
+                                </form>
+                                <form action="{{ path('delete_database', { 'id': database.id }) }}" method="post" class="d-inline" onsubmit="return confirm('Are you sure you want to delete this database?');">
+                                <button type="submit" class="btn btn-danger">Delete</button>
+                            </form>
+                            </td>
                         </tr>
                     {% else %}
                         <tr>
@@ -41,6 +64,7 @@
     </div>
 
     <!-- Modal -->
+    
     <div class="modal fade" id="addDatabaseModal" tabindex="-1" aria-labelledby="addDatabaseModalLabel" aria-hidden="true">
         <div class="modal-dialog modal-lg">
             <div class="modal-content bg-dark text-light">
