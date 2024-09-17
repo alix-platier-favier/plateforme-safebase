@@ -5,29 +5,21 @@ namespace App\Controller;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpFoundation\Request;
-use Symfony\Component\Routing\Attribute\Route;
+use Symfony\Component\Routing\Annotation\Route;
 use Doctrine\ORM\EntityManagerInterface;
 use App\Entity\Database;
-use App\Entity\Backup;
-use Symfony\Component\Process\Process;
 use App\Repository\DatabaseRepository;
-use App\Repository\BackupRepository;
-use Symfony\Component\Process\Exception\ProcessFailedException;
+use App\Entity\Backup;
 
 class DashboardController extends AbstractController
 {
-
-
     #[Route('/', name: 'dashboard')]
-    public function index(DatabaseRepository $databaseRepository, BackupRepository $backupRepository): Response
+    public function index(DatabaseRepository $databaseRepository): Response
     {
         $databases = $databaseRepository->findAll();
-        $backups = $backupRepository->findAll(); 
 
         return $this->render('dashboard/index.html.twig', [
-            'controller_name' => 'DashboardController',
             'databases' => $databases,
-            'backups' => $backups, 
         ]);
     }
 
@@ -48,49 +40,33 @@ class DashboardController extends AbstractController
         return $this->redirectToRoute('dashboard');
     }
 
-    #[Route('/delete-database/{id}', name: 'delete_database', methods: ['POST'])]
-    public function deleteDatabase(int $id, DatabaseRepository $databaseRepository, EntityManagerInterface $entityManager): Response
-    {
-        $database = $databaseRepository->find($id);
-
-        if ($database) {
-            $entityManager->remove($database);
-            $entityManager->flush();
-        }
-
-        $this->addFlash('danger', 'Database deleted successfully!');
-
-        return $this->redirectToRoute('dashboard');
-    }
-    
-    #[Route('/backup/{id}', name: 'backup_database', methods: ['POST'])]
+    #[Route('/backup-database/{id}', name: 'backup_database')]
     public function backupDatabase(Database $database, EntityManagerInterface $entityManager): Response
     {
-        $filename = sprintf('backup_%d_%s.sql', $database->getId(), date('YmdHis'));
+        $backup = new Backup();
+        $backup->setAssociatedDatabase($database);
+        $backup->setCreatedAt(new \DateTime());
+
+        $backupFileName = sprintf('backup_%s_%s.sql', $database->getDbname(), (new \DateTime())->format('YmdHis'));
+        $backupFilePath = sprintf('backup\%s', $backupFileName);
 
         $command = sprintf(
-            'mysqldump -u %s -p%s %s > %s',
+            'mysqldump -h %s -P %d -u %s -p%s %s > %s',
+            escapeshellarg($database->getHost()),
+            $database->getPort(),
             escapeshellarg($database->getUsername()),
             escapeshellarg($database->getPassword()),
             escapeshellarg($database->getDbname()),
-            escapeshellarg($filename)
+            escapeshellarg($backupFilePath)
         );
 
-        $process = new Process(['bash', '-c', $command]);
+        exec($command);
 
-        try {
-            $process->mustRun();
-        } catch (ProcessFailedException $exception) {
-            throw new \RuntimeException($exception->getMessage());
-        }
-
-        $backup = new Backup();
-        $backup->setFilename($filename);
-        $backup->setCreatedAt(new \DateTime());
-        $backup->setAssociatedDatabase($database);
-
+        $backup->setFilename($backupFileName);
         $entityManager->persist($backup);
         $entityManager->flush();
+
+        $this->addFlash('success', 'Database backup created successfully.');
 
         return $this->redirectToRoute('dashboard');
     }
