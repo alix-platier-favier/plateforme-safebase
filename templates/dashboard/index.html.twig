@@ -44,7 +44,15 @@
                             <td>
                                 <form action="{{ path('backup_database', { 'id': database.id }) }}" method="post" class="d-inline">
                                     <button type="submit" class="btn btn-primary">Backup</button>
-                                </form>                                                        
+                                </form>   
+                                {# <form action="{{ path('restore_database', { 'id': database.id }) }}" method="post" class="d-inline">
+                                    <button type="submit" class="btn btn-success">Restore</button>
+                                </form> #}
+                                <form action="{{ path('delete_database', { 'id': database.id }) }}" method="post" class="d-inline" onsubmit="return confirm('Are you sure you want to delete {{database.name}}?');">
+                                    <input type="hidden" name="_token" value="{{ csrf_token('delete_database' ~ database.id) }}">
+                                    <button type="submit" class="btn btn-danger">Delete</button>
+                                </form>
+                             
                             </td>
                         </tr>
                     {% else %}
@@ -57,7 +65,7 @@
         </div>
     </div>
 
-    <!-- Modal -->
+    <!-- Modal add-->
     
     <div class="modal fade" id="addDatabaseModal" tabindex="-1" aria-labelledby="addDatabaseModalLabel" aria-hidden="true">
         <div class="modal-dialog modal-lg">

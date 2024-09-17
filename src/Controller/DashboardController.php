@@ -70,4 +70,20 @@ class DashboardController extends AbstractController
 
         return $this->redirectToRoute('dashboard');
     }
+
+    #[Route('/delete-database/{id}', name: 'delete_database')]
+    public function deleteDatabase(Database $database, EntityManagerInterface $entityManager): Response
+    {
+        $backupRepository = $entityManager->getRepository(Backup::class);
+        $backups = $backupRepository->findBy(['associatedDatabase' => $database]);
+
+        foreach ($backups as $backup) {
+            $entityManager->remove($backup);
+        }
+
+        $entityManager->remove($database);
+        $entityManager->flush();
+
+        return $this->redirectToRoute('dashboard');
+    }
 }
