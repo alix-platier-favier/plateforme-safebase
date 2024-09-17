@@ -8,18 +8,26 @@ use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\Routing\Attribute\Route;
 use Doctrine\ORM\EntityManagerInterface;
 use App\Entity\Database;
+use App\Entity\Backup;
+use Symfony\Component\Process\Process;
 use App\Repository\DatabaseRepository;
+use App\Repository\BackupRepository;
+use Symfony\Component\Process\Exception\ProcessFailedException;
 
 class DashboardController extends AbstractController
 {
+
+
     #[Route('/', name: 'dashboard')]
-    public function index(DatabaseRepository $databaseRepository): Response
+    public function index(DatabaseRepository $databaseRepository, BackupRepository $backupRepository): Response
     {
         $databases = $databaseRepository->findAll();
+        $backups = $backupRepository->findAll(); 
 
         return $this->render('dashboard/index.html.twig', [
             'controller_name' => 'DashboardController',
             'databases' => $databases,
+            'backups' => $backups, 
         ]);
     }
 
@@ -55,42 +63,35 @@ class DashboardController extends AbstractController
         return $this->redirectToRoute('dashboard');
     }
     
-    #[Route('/save-database/{id}', name: 'save_database', methods: ['POST'])]
-    public function saveDatabase(int $id, EntityManagerInterface $entityManager): Response
+    #[Route('/backup/{id}', name: 'backup_database', methods: ['POST'])]
+    public function backupDatabase(Database $database, EntityManagerInterface $entityManager): Response
     {
-        $database = $entityManager->getRepository(Database::class)->find($id);
+        $filename = sprintf('backup_%d_%s.sql', $database->getId(), date('YmdHis'));
 
-        if ($database) {
-            $dbname = $database->getDbname();
-            $backupFile = "/path/to/backups/{$dbname}_" . date('Ymd_His') . ".sql";
+        $command = sprintf(
+            'mysqldump -u %s -p%s %s > %s',
+            escapeshellarg($database->getUsername()),
+            escapeshellarg($database->getPassword()),
+            escapeshellarg($database->getDbname()),
+            escapeshellarg($filename)
+        );
 
-            // Use mysqldump to save the database
-            $command = "mysqldump -u {$database->getUsername()} -p{$database->getPassword()} {$dbname} > {$backupFile}";
-            system($command);
+        $process = new Process(['bash', '-c', $command]);
+
+        try {
+            $process->mustRun();
+        } catch (ProcessFailedException $exception) {
+            throw new \RuntimeException($exception->getMessage());
         }
 
-        $this->addFlash('success', 'Database saved successfully!');
+        $backup = new Backup();
+        $backup->setFilename($filename);
+        $backup->setCreatedAt(new \DateTime());
+        $backup->setAssociatedDatabase($database);
+
+        $entityManager->persist($backup);
+        $entityManager->flush();
 
         return $this->redirectToRoute('dashboard');
     }
-
-    #[Route('/restore-database/{id}', name: 'restore_database', methods: ['POST'])]
-    public function restoreDatabase(int $id, Request $request, EntityManagerInterface $entityManager): Response
-    {
-        $database = $entityManager->getRepository(Database::class)->find($id);
-
-        if ($database) {
-            $dbname = $database->getDbname();
-            $backupFile = $request->request->get('backup_file'); 
-
-            $command = "mysql -u {$database->getUsername()} -p{$database->getPassword()} {$dbname} < {$backupFile}";
-            system($command);
-        }
-
-        $this->addFlash('success', 'Database restored successfully!');
-
-        return $this->redirectToRoute('dashboard');
-    }
-
-
 }

@@ -4,6 +4,8 @@ namespace App\Entity;
 
 use ApiPlatform\Metadata\ApiResource;
 use App\Repository\DatabaseRepository;
+use Doctrine\Common\Collections\ArrayCollection;
+use Doctrine\Common\Collections\Collection;
 use Doctrine\ORM\Mapping as ORM;
 
 #[ORM\Entity(repositoryClass: DatabaseRepository::class)]
@@ -36,6 +38,17 @@ class Database
 
     #[ORM\ManyToOne(inversedBy: 'userDB')]
     private ?User $user = null;
+
+    /**
+     * @var Collection<int, Backup>
+     */
+    #[ORM\OneToMany(targetEntity: Backup::class, mappedBy: 'associatedDatabase')]
+    private Collection $backups;
+
+    public function __construct()
+    {
+        $this->backups = new ArrayCollection();
+    }
 
     public function getId(): ?int
     {
@@ -122,6 +135,36 @@ class Database
     public function setUser(?User $user): static
     {
         $this->user = $user;
+
+        return $this;
+    }
+
+    /**
+     * @return Collection<int, Backup>
+     */
+    public function getBackups(): Collection
+    {
+        return $this->backups;
+    }
+
+    public function addBackup(Backup $backup): static
+    {
+        if (!$this->backups->contains($backup)) {
+            $this->backups->add($backup);
+            $backup->setAssociatedDatabase($this);
+        }
+
+        return $this;
+    }
+
+    public function removeBackup(Backup $backup): static
+    {
+        if ($this->backups->removeElement($backup)) {
+            // set the owning side to null (unless already changed)
+            if ($backup->getAssociatedDatabase() === $this) {
+                $backup->setAssociatedDatabase(null);
+            }
+        }
 
         return $this;
     }
