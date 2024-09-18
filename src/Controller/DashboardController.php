@@ -34,10 +34,43 @@ class DashboardController extends AbstractController
         $database->setPassword($request->request->get('password'));
         $database->setDbname($request->request->get('dbname'));
 
+        $createDbCommand = sprintf(
+            'mysql -h %s -P %d -u %s -p%s -e "CREATE DATABASE IF NOT EXISTS %s"',
+            escapeshellarg($database->getHost()),
+            $database->getPort(),
+            escapeshellarg($database->getUsername()),
+            escapeshellarg($database->getPassword()),
+            escapeshellarg($database->getDbname())
+        );
+
+        exec($createDbCommand, $output, $returnVar);
+
+        if ($returnVar !== 0) {
+            $this->addFlash('danger', 'Failed to create the database. Please check the connection details.');
+            return $this->redirectToRoute('dashboard');
+        }
+
         $entityManager->persist($database);
         $entityManager->flush();
 
+        $this->populateMockData($database);
+
+        $this->addFlash('success', 'Database created and populated successfully.');
         return $this->redirectToRoute('dashboard');
+    }
+
+    private function populateMockData(Database $database): void
+    {
+        $mockDataCommand = sprintf(
+            'mysql -h %s -P %d -u %s -p%s %s -e "CREATE TABLE IF NOT EXISTS test_data (id INT PRIMARY KEY AUTO_INCREMENT, name VARCHAR(255), value INT); INSERT INTO test_data (name, value) VALUES (\'Sample 1\', 100), (\'Sample 2\', 200);"',
+            escapeshellarg($database->getHost()),
+            $database->getPort(),
+            escapeshellarg($database->getUsername()),
+            escapeshellarg($database->getPassword()),
+            escapeshellarg($database->getDbname())
+        );
+
+        exec($mockDataCommand);
     }
 
     #[Route('/backup-database/{id}', name: 'backup_database')]
@@ -78,12 +111,100 @@ class DashboardController extends AbstractController
         $backups = $backupRepository->findBy(['associatedDatabase' => $database]);
 
         foreach ($backups as $backup) {
+            $filePath = sprintf('backup/%s', $backup->getFilename());
+            if (file_exists($filePath)) {
+                unlink($filePath);
+            }
+
             $entityManager->remove($backup);
         }
 
         $entityManager->remove($database);
         $entityManager->flush();
 
+        $deleteDbCommand = sprintf(
+            'mysql -h %s -P %d -u %s -p%s -e "DROP DATABASE IF EXISTS %s"',
+            escapeshellarg($database->getHost()),
+            $database->getPort(),
+            escapeshellarg($database->getUsername()),
+            escapeshellarg($database->getPassword()),
+            escapeshellarg($database->getDbname())
+        );
+
+        exec($deleteDbCommand, $output, $returnVar);
+
+        if ($returnVar !== 0) {
+            $this->addFlash('danger', 'Failed to delete the database. Please check the connection details.');
+            return $this->redirectToRoute('dashboard');
+        }
+
+        $this->addFlash('success', 'Database and associated backups deleted successfully.');
+
         return $this->redirectToRoute('dashboard');
     }
+
+
+    #[Route('/restore-database/{id}', name: 'restore_database', methods: ['POST'])]
+    public function restoreDatabase(Request $request, Database $database, EntityManagerInterface $entityManager): Response
+    {
+        $backupFileName = $request->request->get('backupFile');
+
+        if (!$backupFileName) {
+            $this->addFlash('danger', 'No backup file selected for restoration.');
+            return $this->redirectToRoute('dashboard');
+        }
+
+        $backup = $entityManager->getRepository(Backup::class)->findOneBy(['filename' => $backupFileName]);
+
+        if (!$backup) {
+            $this->addFlash('danger', 'Backup file not found.');
+            return $this->redirectToRoute('dashboard');
+        }
+
+        $backupFilePath = sprintf('backup/%s', $backupFileName);
+
+        if (file_exists($backupFilePath)) {
+            $command = sprintf(
+                'mysql -h %s -P %d -u %s -p%s %s < %s',
+                escapeshellarg($database->getHost()),
+                $database->getPort(),
+                escapeshellarg($database->getUsername()),
+                escapeshellarg($database->getPassword()),
+                escapeshellarg($database->getDbname()),
+                escapeshellarg($backupFilePath)
+            );
+
+            exec($command, $output, $returnVar);
+
+            if ($returnVar !== 0) {
+                $this->addFlash('danger', 'An error occurred during database restoration.');
+                return $this->redirectToRoute('dashboard');
+            }
+
+            $backupDate = $backup->getCreatedAt();
+            $subsequentBackups = $entityManager->getRepository(Backup::class)->findBy([
+                'associatedDatabase' => $database
+            ]);
+
+            foreach ($subsequentBackups as $subBackup) {
+                if ($subBackup->getCreatedAt() > $backupDate) {
+                    $filePath = sprintf('backup/%s', $subBackup->getFilename());
+                    if (file_exists($filePath)) {
+                        unlink($filePath);
+                    }
+
+                    $entityManager->remove($subBackup);
+                }
+            }
+            $entityManager->flush();
+
+            $this->addFlash('success', 'Database restored successfully.');
+        } else {
+            $this->addFlash('danger', 'Backup file does not exist.');
+        }
+
+        return $this->redirectToRoute('dashboard');
+    }
+
+
 }

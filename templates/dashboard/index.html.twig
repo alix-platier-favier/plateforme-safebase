@@ -29,6 +29,7 @@
                         <th>Port</th>
                         <th>Username</th>
                         <th>Database Name</th>
+                        <th>Last Backup</th>
                         <th>Actions</th>
                     </tr>
                 </thead>
@@ -40,19 +41,63 @@
                             <td>{{ database.port }}</td>
                             <td>{{ database.username }}</td>
                             <td>{{ database.dbname }}</td>
+                            <td>
+                                {% if database.backups|length > 0 %}
+                                    {{ database.backups|last.createdAt|date('Y-m-d H:i:s') }}
+                                {% else %}
+                                    No backup
+                                {% endif %}
+                            </td>
 
                             <td>
                                 <form action="{{ path('backup_database', { 'id': database.id }) }}" method="post" class="d-inline">
                                     <button type="submit" class="btn btn-primary">Backup</button>
                                 </form>   
-                                {# <form action="{{ path('restore_database', { 'id': database.id }) }}" method="post" class="d-inline">
-                                    <button type="submit" class="btn btn-success">Restore</button>
-                                </form> #}
+                                <button type="button" class="btn btn-info" data-toggle="modal" data-target="#restoreModal-{{ database.id }}">
+                                    Restore
+                                </button>
                                 <form action="{{ path('delete_database', { 'id': database.id }) }}" method="post" class="d-inline" onsubmit="return confirm('Are you sure you want to delete {{database.name}}?');">
                                     <input type="hidden" name="_token" value="{{ csrf_token('delete_database' ~ database.id) }}">
                                     <button type="submit" class="btn btn-danger">Delete</button>
                                 </form>
-                             
+
+                                <!-- Modal restore-->
+
+                                 <div class="modal fade" id="restoreModal-{{ database.id }}" tabindex="-1" aria-labelledby="restoreModalLabel-{{ database.id }}" aria-hidden="true">
+                                    <div class="modal-dialog">
+                                        <div class="modal-content bg-dark text-light">
+                                            <div class="modal-header">
+                                                <h5 class="modal-title" id="restoreModalLabel-{{ database.id }}">Restore Database</h5>
+                                                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                                                    <span aria-hidden="true">&times;</span>
+                                                </button>
+                                            </div>
+                                            <div class="modal-body">
+                                                <form method="post" action="{{ path('restore_database', { 'id': database.id }) }}">
+                                                    <div class="form-group">
+                                                        <label for="backupFile">Select Backup File</label>
+                                                        <div>
+                                                            {% for backup in database.backups %}
+                                                                <div class="form-check d-flex justify-content-between align-items-center mb-3">
+                                                                    <input class="form-check-input" type="radio" name="backupFile" id="backupFile-{{ backup.id }}" value="{{ backup.filename }}" required>
+                                                                    <label class="form-check-label" for="backupFile-{{ backup.id }}">
+                                                                        {{ database.name }} ({{ backup.createdAt|date('Y-m-d H:i:s') }})
+                                                                    </label>
+                                                                </div>
+                                                            {% else %}
+                                                                <p>No backups available for this database.</p>
+                                                            {% endfor %}
+                                                        </div>
+                                                    </div>
+                                                    <div class="modal-footer">
+                                                        <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
+                                                        <button type="submit" class="btn btn-primary">Restore</button>
+                                                    </div>
+                                                </form>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
                             </td>
                         </tr>
                     {% else %}
