@@ -27,3 +27,5 @@
 ###< symfony/asset-mapper ###
 
 compose.yaml
+
+/migrations/
