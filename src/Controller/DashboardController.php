@@ -4,6 +4,7 @@ namespace App\Controller;
 
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Response;
+use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\Routing\Annotation\Route;
 use Doctrine\ORM\EntityManagerInterface;
@@ -203,6 +204,46 @@ class DashboardController extends AbstractController
             $this->addFlash('danger', 'Backup file does not exist.');
         }
 
+        return $this->redirectToRoute('dashboard');
+    }
+
+    #[Route('/schedule-backup', name: 'schedule_backup', methods: ['POST'])]
+    public function scheduleBackup(Request $request): Response
+    {
+        // Récupérer la fréquence et l'ID de la base de données depuis la soumission du formulaire
+        $databaseId = $request->request->get('database_id');
+        $frequency = $request->request->get('backupFrequency');
+
+        // Déterminer la fréquence de la tâche schtasks en fonction de l'entrée utilisateur
+        $schtasksFrequency = match ($frequency) {
+            'minute' => 'MINUTE',
+            'hour' => 'HOURLY',
+            'day' => 'DAILY',
+            'week' => 'WEEKLY',
+            'month' => 'MONTHLY',
+            default => 'DAILY',
+        };
+
+        // Commande pour schtasks en utilisant l'ID de la base de données
+        $command = sprintf(
+            'schtasks /create /tn "SymfonyAutoBackupDatabase_%s" /tr "php bin/console app:autoBackup %d" /sc %s /f',
+            $databaseId,
+            $databaseId,
+            $schtasksFrequency
+        );
+
+        $output = null;
+        $resultCode = null;
+        exec($command, $output, $resultCode);
+
+        // Ajouter un flash message en fonction du résultat
+        if ($resultCode === 0) {
+            $this->addFlash('success', 'La sauvegarde automatique a été planifiée avec succès pour la base de données ID: ' . $databaseId);
+        } else {
+            $this->addFlash('danger', 'Erreur lors de la planification de la sauvegarde automatique.');
+        }
+
+        // Rediriger vers la page dashboard
         return $this->redirectToRoute('dashboard');
     }
 
