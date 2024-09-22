@@ -5,16 +5,20 @@ namespace App\Command;
 use App\Entity\Database;
 use App\Entity\Backup;
 use Doctrine\ORM\EntityManagerInterface;
+use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Console\Style\SymfonyStyle;
 
+#[AsCommand(
+    name: 'app:autoBackup',
+    description: 'Automatically backup a database by its ID',
+    aliases: ['app:backup-auto', 'app:db-backup']
+)]
 class AutomaticBackupCommand extends Command
 {
-    protected static string $defaultName = 'app:autoBackup';
-
     private EntityManagerInterface $entityManager;
 
     public function __construct(EntityManagerInterface $entityManager)
@@ -26,7 +30,6 @@ class AutomaticBackupCommand extends Command
     protected function configure(): void
     {
         $this
-            ->setDescription('Automatically backup a database by its ID')
             ->addArgument('databaseId', InputArgument::REQUIRED, 'ID of the database to backup');
     }
 
@@ -35,7 +38,6 @@ class AutomaticBackupCommand extends Command
         $io = new SymfonyStyle($input, $output);
         $databaseId = $input->getArgument('databaseId');
 
-        // Récupérer la base de données avec l'ID donné
         $database = $this->entityManager->getRepository(Database::class)->find($databaseId);
 
         if (!$database) {
@@ -43,15 +45,20 @@ class AutomaticBackupCommand extends Command
             return Command::FAILURE;
         }
 
-        // Création d'un nouvel objet Backup
         $backup = new Backup();
         $backup->setAssociatedDatabase($database);
         $backup->setCreatedAt(new \DateTime());
 
-        $backupFileName = sprintf('backup_%s_%s.sql', $database->getDbname(), (new \DateTime())->format('YmdHis'));
-        $backupFilePath = sprintf('backup\%s', $backupFileName);
+        $backupDir = realpath(__DIR__ . '/../..') . DIRECTORY_SEPARATOR . 'public' . DIRECTORY_SEPARATOR . 'backup';
+        if (!is_dir($backupDir)) {
+            mkdir($backupDir, 0755, true);
+        }
 
-        // Commande mysqldump pour sauvegarder la base de données
+        $backupFileName = sprintf('backup_%s_%s.sql', $database->getDbname(), (new \DateTime())->format('YmdHis'));
+        $backupFilePath = sprintf('%s%s%s', $backupDir, DIRECTORY_SEPARATOR, $backupFileName);
+
+        $io->note('Backup file path: ' . $backupFilePath);
+
         $command = sprintf(
             'mysqldump -h %s -P %d -u %s -p%s %s > %s',
             escapeshellarg($database->getHost()),
@@ -69,7 +76,6 @@ class AutomaticBackupCommand extends Command
             return Command::FAILURE;
         }
 
-        // Enregistrer la sauvegarde dans la base de données
         $backup->setFilename($backupFileName);
         $this->entityManager->persist($backup);
         $this->entityManager->flush();
