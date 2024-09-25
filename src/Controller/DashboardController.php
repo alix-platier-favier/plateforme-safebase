@@ -4,6 +4,7 @@ namespace App\Controller;
 
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Response;
+use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\Routing\Annotation\Route;
 use Doctrine\ORM\EntityManagerInterface;
@@ -206,5 +207,39 @@ class DashboardController extends AbstractController
         return $this->redirectToRoute('dashboard');
     }
 
+    #[Route('/schedule-backup', name: 'schedule_backup', methods: ['POST'])]
+    public function scheduleBackup(Request $request): Response
+    {
+        $databaseId = $request->request->get('database_id');
+        $frequency = $request->request->get('backupFrequency');
+
+        $schtasksFrequency = match ($frequency) {
+            'minute' => 'MINUTE',
+            'hour' => 'HOURLY',
+            'day' => 'DAILY',
+            'week' => 'WEEKLY',
+            'month' => 'MONTHLY',
+            default => 'DAILY',
+        };
+
+        $command = sprintf(
+            'schtasks /create /tn "SymfonyAutoBackupDatabase_%s" /tr "php bin/console app:autoBackup %d" /sc %s /f',
+            $databaseId,
+            $databaseId,
+            $schtasksFrequency
+        );
+
+        $output = null;
+        $resultCode = null;
+        exec($command, $output, $resultCode);
+
+        if ($resultCode === 0) {
+            $this->addFlash('success', 'La sauvegarde automatique a été planifiée avec succès pour la base de données ID: ' . $databaseId);
+        } else {
+            $this->addFlash('danger', 'Erreur lors de la planification de la sauvegarde automatique.');
+        }
+
+        return $this->redirectToRoute('dashboard');
+    }
 
 }

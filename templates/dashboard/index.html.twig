@@ -52,10 +52,16 @@
                             <td>
                                 <form action="{{ path('backup_database', { 'id': database.id }) }}" method="post" class="d-inline">
                                     <button type="submit" class="btn btn-primary">Backup</button>
-                                </form>   
+                                </form>
+
+                                <button type="button" class="btn btn-info" data-toggle="modal" data-target="#autoBackupModal-{{ database.id }}">
+                                    Auto-Backup
+                                </button>
+
                                 <button type="button" class="btn btn-info" data-toggle="modal" data-target="#restoreModal-{{ database.id }}">
                                     Restore
                                 </button>
+
                                 <form action="{{ path('delete_database', { 'id': database.id }) }}" method="post" class="d-inline" onsubmit="return confirm('Are you sure you want to delete {{database.name}}?');">
                                     <input type="hidden" name="_token" value="{{ csrf_token('delete_database' ~ database.id) }}">
                                     <button type="submit" class="btn btn-danger">Delete</button>
@@ -63,7 +69,7 @@
 
                                 <!-- Modal restore-->
 
-                                 <div class="modal fade" id="restoreModal-{{ database.id }}" tabindex="-1" aria-labelledby="restoreModalLabel-{{ database.id }}" aria-hidden="true">
+                                <div class="modal fade" id="restoreModal-{{ database.id }}" tabindex="-1" aria-labelledby="restoreModalLabel-{{ database.id }}" aria-hidden="true">
                                     <div class="modal-dialog">
                                         <div class="modal-content bg-dark text-light">
                                             <div class="modal-header">
@@ -92,6 +98,40 @@
                                                     <div class="modal-footer">
                                                         <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
                                                         <button type="submit" class="btn btn-primary">Restore</button>
+                                                    </div>
+                                                </form>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Modal Auto-Backup -->
+
+                                <div class="modal fade" id="autoBackupModal-{{ database.id }}" tabindex="-1" aria-labelledby="autoBackupModalLabel-{{ database.id }}" aria-hidden="true">
+                                    <div class="modal-dialog">
+                                        <div class="modal-content bg-dark text-light">
+                                            <div class="modal-header">
+                                                <h5 class="modal-title" id="autoBackupModalLabel-{{ database.id }}">Set Auto Backup</h5>
+                                                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                                                    <span aria-hidden="true">&times;</span>
+                                                </button>
+                                            </div>
+                                            <div class="modal-body">
+                                                <form id="autoBackupForm-{{ database.id }}" method="post" action="{{ path('schedule_backup') }}">
+                                                    <input type="hidden" name="database_id" value="{{ database.id }}">
+                                                    <div class="form-group">
+                                                        <label for="backupFrequency">Backup Frequency</label>
+                                                        <select class="form-control" id="backupFrequency" name="backupFrequency">
+                                                            <option value="minute">Every Minute</option>
+                                                            <option value="hour">Every Hour</option>
+                                                            <option value="day">Every Day</option>
+                                                            <option value="week">Every Week</option>
+                                                            <option value="month">Every Month</option>
+                                                        </select>
+                                                    </div>
+                                                    <div class="modal-footer">
+                                                        <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
+                                                        <button type="submit" class="btn btn-primary">Save</button>
                                                     </div>
                                                 </form>
                                             </div>
