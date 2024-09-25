@@ -1,6 +1,13 @@
 FROM php:8.2-fpm-alpine
 
-RUN docker-php-ext-install pdo pdo_mysql
+RUN apk add --no-cache \
+    bash \
+    git \
+    libzip-dev \
+    unzip \
+    icu-dev \
+    && docker-php-ext-configure intl \
+    && docker-php-ext-install intl zip pdo_mysql mysqli pdo
 
 WORKDIR /var/www
 
