@@ -17,7 +17,7 @@ class DashboardControllerTest extends WebTestCase
             'host' => 'localhost',
             'port' => 3306,
             'username' => 'test_user',
-            'password' => 'test_password',  // password ne peut pas être vide
+            'password' => 'test_password', 
             'dbname' => 'test_dbname',
         ];
         
