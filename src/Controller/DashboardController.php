@@ -27,6 +27,38 @@ class DashboardController extends AbstractController
     #[Route('/add-database', name: 'add_database', methods: ['POST'])]
     public function addDatabase(Request $request, EntityManagerInterface $entityManager): Response
     {
+        // $database = new Database();
+        // $database->setName($request->request->get('name'));
+        // $database->setHost($request->request->get('host'));
+        // $database->setPort($request->request->get('port'));
+        // $database->setUsername($request->request->get('username'));
+        // $database->setPassword($request->request->get('password'));
+        // $database->setDbname($request->request->get('dbname'));
+
+        // $createDbCommand = sprintf(
+        //     'mysql -h %s -P %d -u %s -p%s -e "CREATE DATABASE IF NOT EXISTS %s"',
+        //     escapeshellarg($database->getHost()),
+        //     $database->getPort(),
+        //     escapeshellarg($database->getUsername()),
+        //     escapeshellarg($database->getPassword()),
+        //     escapeshellarg($database->getDbname())
+        // );
+
+        // exec($createDbCommand, $output, $returnVar);
+
+        // if ($returnVar !== 0) {
+        //     $this->addFlash('danger', 'Failed to create the database. Please check the connection details.');
+        //     return $this->redirectToRoute('dashboard');
+        // }
+
+        // $entityManager->persist($database);
+        // $entityManager->flush();
+
+        // $this->populateMockData($database);
+
+        // $this->addFlash('success', 'Database created and populated successfully.');
+        // return $this->redirectToRoute('dashboard');
+
         $database = new Database();
         $database->setName($request->request->get('name'));
         $database->setHost($request->request->get('host'));
@@ -34,22 +66,6 @@ class DashboardController extends AbstractController
         $database->setUsername($request->request->get('username'));
         $database->setPassword($request->request->get('password'));
         $database->setDbname($request->request->get('dbname'));
-
-        $createDbCommand = sprintf(
-            'mysql -h %s -P %d -u %s -p%s -e "CREATE DATABASE IF NOT EXISTS %s"',
-            escapeshellarg($database->getHost()),
-            $database->getPort(),
-            escapeshellarg($database->getUsername()),
-            escapeshellarg($database->getPassword()),
-            escapeshellarg($database->getDbname())
-        );
-
-        exec($createDbCommand, $output, $returnVar);
-
-        if ($returnVar !== 0) {
-            $this->addFlash('danger', 'Failed to create the database. Please check the connection details.');
-            return $this->redirectToRoute('dashboard');
-        }
 
         $entityManager->persist($database);
         $entityManager->flush();
