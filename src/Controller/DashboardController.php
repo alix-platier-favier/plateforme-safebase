@@ -70,8 +70,6 @@ class DashboardController extends AbstractController
         $entityManager->persist($database);
         $entityManager->flush();
 
-        $this->populateMockData($database);
-
         $this->addFlash('success', 'Database created and populated successfully.');
         return $this->redirectToRoute('dashboard');
     }
