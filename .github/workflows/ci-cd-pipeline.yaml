@@ -11,6 +11,7 @@ jobs:
   test:
     runs-on: ubuntu-latest
 
+    
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -24,6 +25,9 @@ jobs:
         run: composer install --no-progress --no-suggest --no-interaction --prefer-dist
 
       - name: Run DashboardControllerTest
+        env:
+          APP_ENV: test
+          DATABASE_URL: "mysql://root:root@127.0.0.1:3306/safebase?serverVersion=8.0.32&charset=utf8mb4"
         run: php bin/phpunit
 
       - name: Build Docker image
