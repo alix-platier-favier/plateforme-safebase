@@ -3,31 +3,42 @@
 namespace App\Tests\Controller;
 
 use Symfony\Bundle\FrameworkBundle\Test\WebTestCase;
+use Symfony\Component\HttpFoundation\Request;
+use App\Entity\Database;
+use App\Repository\DatabaseRepository;
+use Doctrine\ORM\EntityManagerInterface;
+use App\Repository\BackupRepository;
 
 class DashboardControllerTest extends WebTestCase
 {
+    public function testIndex()
+    {
+        $client = static::createClient();
+        $client->request('GET', '/');
+
+        $this->assertResponseIsSuccessful();
+        $this->assertSelectorTextContains('h1', 'Dashboard');
+    }
+
     public function testAddDatabase()
     {
-        // Créer un client pour simuler une requête HTTP
         $client = static::createClient();
-        
-        // Définir les données de test pour l'ajout de la base de données
-        $data = [
-            'name' => 'TestDatabase',
+        $client->request('POST', '/add-database', [
+            'name' => 'TestDB',
             'host' => 'localhost',
-            'port' => 3306,
+            'port' => '3306',
             'username' => 'test_user',
-            'password' => 'test_password', 
-            'dbname' => 'test_dbname',
-        ];
-        
-        // Faire une requête POST pour ajouter une base de données
-        $client->request('POST', '/add-database', $data);
-        
-        // Vérifier que la réponse est un succès (status HTTP 200 ou 201)
-        $this->assertEquals(201, $client->getResponse()->getStatusCode());
+            'password' => 'password',
+            'dbname' => 'testdb',
+        ]);
 
-        // Optionnel : Vérifier le contenu de la réponse
-        $this->assertStringContainsString('Database successfully added', $client->getResponse()->getContent());
+        $this->assertResponseRedirects('/');
+
+        // Vérifiez que la base de données a été créée
+        $databaseRepository = $this->getContainer()->get(DatabaseRepository::class);
+        $database = $databaseRepository->findOneBy(['name' => 'TestDB']);
+
+        $this->assertNotNull($database);
+        $this->assertEquals('TestDB', $database->getName());
     }
 }
