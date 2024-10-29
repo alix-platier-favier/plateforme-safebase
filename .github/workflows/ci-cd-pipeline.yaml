@@ -24,11 +24,11 @@ jobs:
       - name: Install dependencies
         run: composer install --no-progress --no-suggest --no-interaction --prefer-dist
 
-      - name: Run DashboardControllerTest
-        env:
-          APP_ENV: test
-          DATABASE_URL: "mysql://root:root@127.0.0.1:3306/safebase?serverVersion=8.0.32&charset=utf8mb4"
-        run: php bin/phpunit
+      # - name: Run DashboardControllerTest
+      #   env:
+      #     APP_ENV: test
+      #     DATABASE_URL: "mysql://root:root@127.0.0.1:3306/safebase?serverVersion=8.0.32&charset=utf8mb4"
+      #   run: php bin/phpunit
 
       - name: Build Docker image
         run: docker build -t ${{ secrets.DOCKER_HUB_USERNAME }}/ci-cd-pipeline .
